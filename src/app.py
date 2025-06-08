@@ -3,6 +3,9 @@ import streamlit as st
 from data.stock_data import StockDataManager
 import pandas as pd
 import plotly.graph_objs as go
+from ai.analyzer import AIAnalyzer
+import ollama
+
 
 # Konfiguriere die Seite
 st.set_page_config(page_title="GPW Trading AI", layout="centered")
@@ -46,4 +49,22 @@ st.subheader("📍 Aktuelle Kurse")
 kurs_df = pd.DataFrame(kursdaten)
 st.table(kurs_df)
 
+# KI-Analysebereich
+st.subheader("🧠 KI-Analyse")
+analyze = st.button("Analyse starten")
+
+if analyze and selected_names:
+    analyzer = AIAnalyzer()
+    stock_to_analyze = selected_names[0]
+    df = stock_manager.get_history(available_stocks[stock_to_analyze], period="1mo")
+    df_string = df["Close"].to_string()
+    # KI-Analyse (Englisch)
+    result = analyzer.analyze_stock(stock_to_analyze, df_string)
+    st.text_area("💬 KI-Ergebnis (Englisch)", result, height=250)
+    # Automatisch ins Deutsche übersetzen
+    translation_prompt = f"Übersetze diesen Text ins Deutsche:\n\n{result}"
+    translation = ollama.chat(model="llama3", messages=[{"role": "user", "content": translation_prompt}])
+    translated_text = translation["message"]["content"]
+
+    st.text_area("💬 KI-Ergebnis (Deutsch)", translated_text, height=250)
 
